@@ -9,6 +9,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Random;
@@ -19,6 +21,13 @@ import java.util.Random;
 public class AccountServiceImpl implements AccountService {
 
     AccountRepository accountRepository;
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void addAmount(String id, BigDecimal amount) {
+        Account account = accountRepository.getAccountAndObtainPessimisticWriteLockOnItById(id);
+        account.setBalance(account.getBalance().add(amount));
+    }
 
     @Override
     public AccountRegistrationResponse createAccount(AccountRegistrationRequest request) {

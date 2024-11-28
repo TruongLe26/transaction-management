@@ -5,6 +5,9 @@ import com.truonglq.transaction.dto.requests.TransactionRequest;
 import com.truonglq.transaction.dto.responses.RecordTransactionResponse;
 import com.truonglq.transaction.dto.responses.TransactionResponse;
 import com.truonglq.transaction.dto.responses.TransactionResponse;
+import com.truonglq.transaction.exception.AccountNotFoundException;
+import com.truonglq.transaction.exception.InsufficientBalanceException;
+import com.truonglq.transaction.exception.InvalidAmountException;
 import com.truonglq.transaction.service.transaction.TransactionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +25,7 @@ public class AccountTransactionController {
     TransactionService transactionService;
 
     @PostMapping("/transfer")
-    TransactionResponse transfer(@RequestBody TransactionRequest request) {
+    TransactionResponse transfer(@RequestBody TransactionRequest request) throws AccountNotFoundException, InsufficientBalanceException, InvalidAmountException {
         return transactionService.createTransaction(request);
     }
 

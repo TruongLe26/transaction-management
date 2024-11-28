@@ -1,8 +1,13 @@
 package com.truonglq.transaction.service.transaction;
 
+import com.truonglq.transaction.service.account.AccountService;
+import com.truonglq.transaction.service.transaction.TransactionService;
 import com.truonglq.transaction.dto.requests.TransactionRequest;
 import com.truonglq.transaction.dto.responses.RecordTransactionResponse;
 import com.truonglq.transaction.dto.responses.TransactionResponse;
+import com.truonglq.transaction.exception.AccountNotFoundException;
+import com.truonglq.transaction.exception.InsufficientBalanceException;
+import com.truonglq.transaction.exception.InvalidAmountException;
 import com.truonglq.transaction.model.entities.Account;
 import com.truonglq.transaction.model.entities.Transaction;
 import com.truonglq.transaction.model.enums.TransactionType;
@@ -10,6 +15,7 @@ import com.truonglq.transaction.repository.account.AccountRepository;
 import com.truonglq.transaction.repository.transaction.TransactionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.PessimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,10 +46,30 @@ public class TransactionServiceImpl implements TransactionService {
     EntityManager entityManager;
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
+    private static final long PESSIMISTIC_LOCKING_EXCEPTION_HANDLING_RETRY_AFTER_MS = 200;
+
+    AccountService accountService;
+
+    @Transactional(readOnly = true)
+    public void addAmount(String id, BigDecimal amount) {
+        try {
+            accountService.addAmount(id, amount);
+        } catch (PessimisticLockException e) {
+            log.error("Found pessimistic lock exception!", e);
+        }
+    }
+
+    private void sleepForAWhile() {
+        try {
+            TimeUnit.MILLISECONDS.sleep(PESSIMISTIC_LOCKING_EXCEPTION_HANDLING_RETRY_AFTER_MS);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public TransactionResponse createTransaction(TransactionRequest request) {
+    public TransactionResponse createTransaction(TransactionRequest request) throws AccountNotFoundException, InsufficientBalanceException, InvalidAmountException {
         String senderId = request.getSenderAccountId();
         String receiverId = request.getReceiverAccountId();
         BigDecimal amount = request.getAmount();
@@ -53,19 +82,16 @@ public class TransactionServiceImpl implements TransactionService {
 //        Account receiver = accountRepository.findById(receiverId).orElseThrow(
 //                () -> new IllegalArgumentException("Receiver account not found")
 //        );
-        Account sender = entityManager.find(Account.class, senderId, LockModeType.PESSIMISTIC_WRITE);
-        if (sender == null) { throw new IllegalArgumentException("Sender account not found"); }
-        Account receiver = entityManager.find(Account.class, receiverId, LockModeType.PESSIMISTIC_WRITE);
-        if (receiver == null) { throw new IllegalArgumentException("Receiver account not found"); }
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("jakarta.persistence.lock.timeout", 5000L);
+
+        Account sender = entityManager.find(Account.class, senderId, LockModeType.PESSIMISTIC_WRITE, properties);
+        if (sender == null) { throw new AccountNotFoundException(); }
+        Account receiver = entityManager.find(Account.class, receiverId, LockModeType.PESSIMISTIC_WRITE, properties);
+        if (receiver == null) { throw new AccountNotFoundException(); }
 
         if (sender.getBalance().compareTo(amount) < 0) {
-            throw new IllegalArgumentException("Insufficient balance");
-        }
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            throw new InsufficientBalanceException();
         }
 
         BigDecimal senderOldBalance = sender.getBalance();
@@ -102,7 +128,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void validateInputs(String senderId, String receiverId, BigDecimal amount) {
         if (senderId.equals(receiverId)) { throw new IllegalArgumentException("Sender and receiver cannot be the same"); }
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) { throw new IllegalArgumentException("Transaction amount must be greater than zero"); }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) { throw new InvalidAmountException(); }
     }
 
     private void processTransaction(Account sender, Account receiver, BigDecimal amount, TransactionType type) {
@@ -115,11 +141,11 @@ public class TransactionServiceImpl implements TransactionService {
 //            sender.setBalance(sender.getBalance().add(amount));
 //            receiver.setBalance(receiver.getBalance().subtract(amount));
 //        }
-        entityManager.persist(sender);
-        entityManager.persist(receiver);
-        entityManager.flush();
-//        accountRepository.save(sender);
-//        accountRepository.save(receiver);
+//        entityManager.persist(sender);
+//        entityManager.persist(receiver);
+//        entityManager.flush();
+        accountRepository.save(sender);
+        accountRepository.save(receiver);
     }
 
     @Override
