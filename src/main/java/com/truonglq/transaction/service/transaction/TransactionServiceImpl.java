@@ -21,6 +21,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,8 +55,10 @@ public class TransactionServiceImpl implements TransactionService {
     public void addAmount(String id, BigDecimal amount) {
         try {
             accountService.addAmount(id, amount);
-        } catch (PessimisticLockException e) {
+        } catch (PessimisticLockingFailureException e) {
             log.error("Found pessimistic lock exception!", e);
+            sleepForAWhile();
+            accountService.addAmount(id, amount);
         }
     }
 

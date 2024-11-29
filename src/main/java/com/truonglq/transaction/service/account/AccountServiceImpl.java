@@ -5,6 +5,7 @@ import com.truonglq.transaction.dto.responses.AccountRegistrationResponse;
 import com.truonglq.transaction.model.entities.Account;
 import com.truonglq.transaction.model.enums.AccountStatus;
 import com.truonglq.transaction.repository.account.AccountRepository;
+import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,12 +22,15 @@ import java.util.Random;
 public class AccountServiceImpl implements AccountService {
 
     AccountRepository accountRepository;
+    EntityManager em;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void addAmount(String id, BigDecimal amount) {
         Account account = accountRepository.getAccountAndObtainPessimisticWriteLockOnItById(id);
         account.setBalance(account.getBalance().add(amount));
+//        em.merge(account);
+//        accountRepository.save(account);
     }
 
     @Override

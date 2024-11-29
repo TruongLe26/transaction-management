@@ -4,8 +4,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
@@ -34,8 +34,8 @@ public class CustomizedAccountRepositoryContext {
     private long minimalPossibleLockTimeOutInMs;
 
     @Getter
-    @Value("${concurrency.pessimisticLocking.lockTimeOutInMsForQueryGetItem: 5000}")
-    private long lockTimeOutInMsForQueryGetItem;
+    @Value("${concurrency.pessimisticLocking.lockTimeOutInMsForQueryGetAccount: 5000}")
+    private long lockTimeOutInMsForQueryGetAccount;
 
     protected final EntityManager em;
 
@@ -47,25 +47,33 @@ public class CustomizedAccountRepositoryContext {
 
     protected long getLockTimeout() {
         Query query = em.createNativeQuery("select @@innodb_lock_wait_timeout");
-        long timeoutDurationInSec = ((BigInteger) query.getSingleResult()).longValue();
-        return TimeUnit.SECONDS.toMillis(timeoutDurationInSec);
+//        long timeoutDurationInSec = ((BigInteger) query.getSingleResult()).longValue();
+//        return TimeUnit.SECONDS.toMillis(timeoutDurationInSec);
+        Object result = query.getSingleResult();
+        if (result instanceof Number) {
+            long timeoutDurationInSec = ((Number) result).longValue();
+            return TimeUnit.SECONDS.toMillis(timeoutDurationInSec);
+        } else {
+            throw new IllegalStateException("Unexpected type for innodb_lock_wait_timeout: " + result.getClass().getName());
+        }
     }
 
     protected Query setLockTimeoutIfRequired(Query query) {
         if (requiredToSetLockTimeoutForEveryQuery) {
-            log.info("... set lockTimeOut {} ms through native query ...", getLockTimeOutInMsForQueryGetItem());
-            setLockTimeout(getLockTimeOutInMsForQueryGetItem());
+            log.info("... set lockTimeOut {} ms through native query ...", getLockTimeOutInMsForQueryGetAccount());
+            setLockTimeout(getLockTimeOutInMsForQueryGetAccount());
         }
 
         if (requiredToSetLockTimeoutQueryHint) {
-            log.info("... set lockTimeOut {} ms through query hint ...", getLockTimeOutInMsForQueryGetItem());
-            query.setHint("javax.persistence.lock.timeout", String.valueOf(getLockTimeOutInMsForQueryGetItem()));
+            log.info("... set lockTimeOut {} ms through query hint ...", getLockTimeOutInMsForQueryGetAccount());
+            query.setHint("javax.persistence.lock.timeout", String.valueOf(getLockTimeOutInMsForQueryGetAccount()));
         }
 
         return query;
     }
 
-    protected void insertArtificialDealyAtTheEndOfTheQueryForTestsOnly() {
+//    protected to public
+    public void insertArtificialDealyAtTheEndOfTheQueryForTestsOnly() {
         // for testing purposes only
     }
 }

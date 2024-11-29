@@ -28,6 +28,9 @@ public class Account {
     @Column(columnDefinition = "VARCHAR(36)", updatable = false)
     String id;
 
+//    @Version
+//    Long version;
+
     @Column(name = "name", nullable = false)
     String name;
 

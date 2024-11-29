@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        show_sql: true
+        format_sql: true
+concurrency:
+  pessimisticLocking:
+    requiredToSetLockTimeoutForTestsAtStartup: true
+    requiredToSetLockTimeoutForEveryQuery: false
+    requiredToSetLockTimeoutQueryHint: false
+    delayAtTheEndOfTheQueryForPessimisticLockingTestingInMs: 2000 # 0 -> 1000
+    minimalPossibleLockTimeOutInMs: 1000 # 0 -> 1000
+    lockTimeOutInMsForQueryGetAccount: 5000

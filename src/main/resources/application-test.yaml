@@ -19,4 +19,4 @@ concurrency:
     requiredToSetLockTimeoutQueryHint: false
     delayAtTheEndOfTheQueryForPessimisticLockingTestingInMs: 0
     minimalPossibleLockTimeOutInMs: 0
-    lockTimeOutInMsForQueryGetItem: 5000
+    lockTimeOutInMsForQueryGetAccount: 5000

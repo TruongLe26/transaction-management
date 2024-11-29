@@ -17,4 +17,5 @@ import java.util.List;
 public interface TransactionService {
     TransactionResponse createTransaction(TransactionRequest request) throws AccountNotFoundException, InsufficientBalanceException, InvalidAmountException;
     List<RecordTransactionResponse> getTransactionsByUserId(String userId);
+    void addAmount(String id, BigDecimal amount);
 }
