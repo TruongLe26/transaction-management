@@ -7,6 +7,7 @@ import com.truonglq.transaction.model.enums.AccountStatus;
 import com.truonglq.transaction.repository.account.AccountRepository;
 import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;

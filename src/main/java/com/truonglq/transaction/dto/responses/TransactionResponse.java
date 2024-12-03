@@ -18,8 +18,8 @@ public class TransactionResponse {
     String receiverAccountNumber;
     @JsonProperty("transaction_id")
     String transactionId;
-    @JsonProperty("transaction_type")
-    String transactionType;
+//    @JsonProperty("transaction_type")
+//    String transactionType;
     String status;
     @JsonProperty("created_at")
     String createdAt;

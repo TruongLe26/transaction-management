@@ -1,5 +1,6 @@
 package com.truonglq.transaction.service.transaction;
 
+import com.truonglq.transaction.repository.transaction.TransactionSpecification;
 import com.truonglq.transaction.service.account.AccountService;
 import com.truonglq.transaction.service.transaction.TransactionService;
 import com.truonglq.transaction.dto.requests.TransactionRequest;
@@ -22,11 +23,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,22 +81,19 @@ public class TransactionServiceImpl implements TransactionService {
         String senderId = request.getSenderAccountId();
         String receiverId = request.getReceiverAccountId();
         BigDecimal amount = request.getAmount();
-        TransactionType type = request.getType();
+//        TransactionType type = request.getType();
         validateInputs(senderId, receiverId, amount);
 
-//        Account sender = accountRepository.findById(senderId).orElseThrow(
-//                () -> new IllegalArgumentException("Sender account not found")
-//        );
-//        Account receiver = accountRepository.findById(receiverId).orElseThrow(
-//                () -> new IllegalArgumentException("Receiver account not found")
-//        );
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("jakarta.persistence.lock.timeout", 5000L);
+        Account sender = accountRepository.findById(senderId).orElseThrow(() -> new AccountNotFoundException("Sender account not found"));
+        Account receiver = accountRepository.findById(receiverId).orElseThrow(() -> new AccountNotFoundException("Receiver account not found"));
 
-        Account sender = entityManager.find(Account.class, senderId, LockModeType.PESSIMISTIC_WRITE, properties);
-        if (sender == null) { throw new AccountNotFoundException(); }
-        Account receiver = entityManager.find(Account.class, receiverId, LockModeType.PESSIMISTIC_WRITE, properties);
-        if (receiver == null) { throw new AccountNotFoundException(); }
+//        Map<String, Object> properties = new HashMap<>();
+//        properties.put("jakarta.persistence.lock.timeout", 5000L);
+
+//        Account sender = entityManager.find(Account.class, senderId, LockModeType.PESSIMISTIC_WRITE, properties);
+//        if (sender == null) { throw new AccountNotFoundException(); }
+//        Account receiver = entityManager.find(Account.class, receiverId, LockModeType.PESSIMISTIC_WRITE, properties);
+//        if (receiver == null) { throw new AccountNotFoundException(); }
 
         if (sender.getBalance().compareTo(amount) < 0) {
             throw new InsufficientBalanceException();
@@ -100,21 +102,26 @@ public class TransactionServiceImpl implements TransactionService {
         BigDecimal senderOldBalance = sender.getBalance();
         BigDecimal receiverOldBalance = receiver.getBalance();
 
-        processTransaction(sender, receiver, amount, type);
+//        processTransaction(sender, receiver, amount, type);
+        try {
+            addAmount(senderId, amount.negate());
+            addAmount(receiverId, amount);
+        } catch (PessimisticLockingFailureException e) {
+            logger.error("Transaction failed due to pessimistic locking issue. Retrying...");
+            throw e;
+        }
 
         Transaction transaction = Transaction.builder()
                 .senderId(senderId)
                 .receiverId(receiverId)
                 .amount(amount)
-                .type(type)
                 .build();
         Transaction savedTransaction = transactionRepository.save(transaction);
 
-        logger.info("Transaction created successfully: senderId={}, receiverId={}, amount={}, type={}",
+        logger.info("Transaction created successfully: senderId={}, receiverId={}, amount={}",
                 savedTransaction.getSenderId(),
                 savedTransaction.getReceiverId(),
-                savedTransaction.getAmount(),
-                savedTransaction.getType()
+                savedTransaction.getAmount()
         );
 
         return TransactionResponse.builder()
@@ -176,11 +183,8 @@ public class TransactionServiceImpl implements TransactionService {
                         response.setRole("receiver");
                     }
 
-                    Account sender = accountRepository.findById(transaction.getSenderId())
-                            .orElseThrow(() -> new IllegalArgumentException("Sender account not found"));
-
-                    Account receiver = accountRepository.findById(transaction.getReceiverId())
-                            .orElseThrow(() -> new IllegalArgumentException("Receiver account not found"));
+                    Account sender = accountRepository.findById(transaction.getSenderId()).orElseThrow(() -> new AccountNotFoundException("Sender account not found"));
+                    Account receiver = accountRepository.findById(transaction.getReceiverId()).orElseThrow(() -> new AccountNotFoundException("Receiver account not found"));
 
                     response.setSenderOldBalance(sender.getBalance()); // Before transaction
                     response.setReceiverOldBalance(receiver.getBalance()); // Before transaction
@@ -191,5 +195,29 @@ public class TransactionServiceImpl implements TransactionService {
                     return response;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<Transaction> getTransactions(
+            String userId,
+            String filter,
+            Pageable pageable,
+            BigDecimal minAmount,
+            BigDecimal maxAmount,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+        Specification<Transaction> spec = Specification.where(TransactionSpecification.hasUserId(userId));
+
+        if ("sender".equalsIgnoreCase(filter)) {
+            spec = spec.and(TransactionSpecification.isSender(userId));
+        } else if ("receiver".equalsIgnoreCase(filter)) {
+            spec = spec.and(TransactionSpecification.isReceiver(userId));
+        }
+
+        if (minAmount != null) { spec = spec.and(TransactionSpecification.hasAmountGreaterThan(minAmount)); }
+        if (maxAmount != null) { spec = spec.and(TransactionSpecification.hasAmountLessThan(maxAmount)); }
+        if (startDate != null && endDate != null) { spec = spec.and(TransactionSpecification.createdBetween(startDate, endDate)); }
+
+        return transactionRepository.findAll(spec, pageable);
     }
 }

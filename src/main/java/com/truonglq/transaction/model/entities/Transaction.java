@@ -36,9 +36,9 @@ public class Transaction {
     @Column(name = "amount", nullable = false)
     BigDecimal amount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    TransactionType type;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "type", nullable = false)
+//    TransactionType type;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

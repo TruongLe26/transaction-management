@@ -1,4 +1,4 @@
-package com.truonglq.transaction;
+package com.truonglq.transaction.transaction;
 
 import com.truonglq.transaction.dto.requests.TransactionRequest;
 import com.truonglq.transaction.dto.responses.TransactionResponse;
@@ -58,14 +58,13 @@ public class TransactionServiceImplTest {
         transactionRequest.setSenderAccountId("sender123");
         transactionRequest.setReceiverAccountId("receiver456");
         transactionRequest.setAmount(BigDecimal.valueOf(100));
-        transactionRequest.setType(TransactionType.DEPOSIT);
     }
 
     @Test
     void testCreateTransaction_Success() {
         when(entityManager.find(Account.class, "sender123")).thenReturn(sender);
         when(entityManager.find(Account.class, "receiver456")).thenReturn(receiver);
-        when(transactionRepository.save(any(Transaction.class))).thenReturn(new Transaction("txn123", "sender123", "receiver456", BigDecimal.valueOf(100), TransactionType.DEPOSIT, null));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(new Transaction("txn123", "sender123", "receiver456", BigDecimal.valueOf(100), null));
 
         TransactionResponse response = transactionService.createTransaction(transactionRequest);
 

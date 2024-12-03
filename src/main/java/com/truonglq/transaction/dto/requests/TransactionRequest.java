@@ -18,5 +18,5 @@ public class TransactionRequest {
     @JsonProperty("receiver_account_id")
     String receiverAccountId;
     BigDecimal amount;
-    TransactionType type;
+//    TransactionType type;
 }

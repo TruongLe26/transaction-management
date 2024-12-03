@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     sender_id VARCHAR(36) NOT NULL,
     receiver_id VARCHAR(36) NOT NULL,
     amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
-    type ENUM('DEPOSIT', 'WITHDRAWAL') NOT NULL,
+--     type ENUM('DEPOSIT', 'WITHDRAWAL') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES accounts(id),
     FOREIGN KEY (receiver_id) REFERENCES accounts(id)
