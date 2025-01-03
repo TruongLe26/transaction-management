@@ -36,6 +36,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public AccountRegistrationResponse createAccount(AccountRegistrationRequest request) {
+
+
         Random random = new Random();
         int accountNumber = random.nextInt(900000000) + 100000000;
         String accountNumberString = String.valueOf(accountNumber);

@@ -1,5 +1,7 @@
 package com.truonglq.transaction.service.transaction;
 
+//import com.blazebit.persistence.PagedList;
+//import com.truonglq.transaction.repository.transaction.CustomizedTransactionRepository;
 import com.truonglq.transaction.repository.transaction.TransactionSpecification;
 import com.truonglq.transaction.service.account.AccountService;
 import com.truonglq.transaction.service.transaction.TransactionService;
@@ -49,6 +51,7 @@ import static lombok.AccessLevel.PRIVATE;
 public class TransactionServiceImpl implements TransactionService {
     AccountRepository accountRepository;
     TransactionRepository transactionRepository;
+//    CustomizedTransactionRepository customizedTransactionRepository;
     EntityManager entityManager;
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
@@ -66,6 +69,21 @@ public class TransactionServiceImpl implements TransactionService {
             accountService.addAmount(id, amount);
         }
     }
+
+    @Override
+    public Page<Transaction> getTransactionsByNativeQuery(String userId, Pageable pageable) {
+        int limit = pageable.getPageSize();
+        int offset = pageable.getPageNumber() * limit;
+
+        return transactionRepository.findTransactionsByUserId(userId, limit, offset, pageable);
+    }
+
+//    @Override
+//    public List<Transaction> getPagedTransactions(int page, int pageSize) {
+//        PagedList<Transaction> transactions = customizedTransactionRepository.findTransactionsPaged(page, pageSize);
+//
+//        return new ArrayList<>(transactions);
+//    }
 
     private void sleepForAWhile() {
         try {

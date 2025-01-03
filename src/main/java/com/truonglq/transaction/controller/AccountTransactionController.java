@@ -43,6 +43,7 @@ public class AccountTransactionController {
         return transactionService.getTransactionsByUserId(userId);
     }
 
+    // Using Specification
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     Page<Transaction> getTransactions(
@@ -55,5 +56,21 @@ public class AccountTransactionController {
             Pageable pageable
     ) {
         return transactionService.getTransactions(userId, filter, pageable, minAmount, maxAmount, startDate, endDate);
+    }
+
+    // Using Keyset Pagination technique
+//    @GetMapping("/paged")
+//    @ResponseStatus(HttpStatus.OK)
+//    List<Transaction> getPagedTransactions(
+//            @RequestParam int page,
+//            @RequestParam int pageSize
+//    ) {
+//        return transactionService.getPagedTransactions(page, pageSize);
+//    }
+
+    @GetMapping("/adv")
+    @ResponseStatus(HttpStatus.OK)
+    Page<Transaction> getTransactionsByNativeQuery(@RequestParam String userId, Pageable pageable) {
+        return transactionService.getTransactionsByNativeQuery(userId, pageable);
     }
 }

@@ -12,13 +12,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, String>, JpaSpecificationExecutor<Transaction> {
-    @Query("SELECT t FROM Transaction t WHERE t.senderId = :userId OR t.receiverId = :userId")
-    Optional<List<Transaction>> findByUserId(@Param("userId") String userId);
     Optional<List<Transaction>> findBySenderId(String senderId);
     Optional<List<Transaction>> findByReceiverId(String receiverId);
 
-    @Query("SELECT t FROM Transaction t WHERE t.senderId = :userId OR t.receiverId = :userId")
-    Page<Transaction> findBySenderIdAndReceiverId(String userId, Pageable pageable);
-    Page<Transaction> findBySenderId(String senderId, Pageable pageable);
-    Page<Transaction> findByReceiverId(String receiverId, Pageable pageable);
+    @Query(value = "SELECT * FROM transaction t WHERE t.sender_id = :userId OR t.receiver_id = :userId LIMIT :limit OFFSET :offset",
+            countQuery = "SELECT COUNT(*) FROM transaction t WHERE t.sender_id = :userId OR t.receiver_id = :userId",
+            nativeQuery = true)
+    Page<Transaction> findTransactionsByUserId(@Param("userId") String userId,
+                                               @Param("limit") int limit,
+                                               @Param("offset") int offset,
+                                               Pageable pageable);
 }

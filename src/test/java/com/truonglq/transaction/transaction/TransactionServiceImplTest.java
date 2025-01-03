@@ -2,6 +2,7 @@ package com.truonglq.transaction.transaction;
 
 import com.truonglq.transaction.dto.requests.TransactionRequest;
 import com.truonglq.transaction.dto.responses.TransactionResponse;
+import com.truonglq.transaction.exception.AccountNotFoundException;
 import com.truonglq.transaction.model.entities.Account;
 import com.truonglq.transaction.model.entities.Transaction;
 import com.truonglq.transaction.model.enums.TransactionType;
@@ -88,13 +89,13 @@ public class TransactionServiceImplTest {
         when(entityManager.find(Account.class, "sender123")).thenReturn(sender);
         when(entityManager.find(Account.class, "receiver456")).thenReturn(receiver);
 
-        assertThrows(IllegalArgumentException.class, () -> transactionService.createTransaction(transactionRequest));
+        assertThrows(AccountNotFoundException.class, () -> transactionService.createTransaction(transactionRequest));
     }
 
     @Test
     void testCreateTransaction_SenderNotFound() {
         when(entityManager.find(Account.class, "sender123")).thenReturn(null);
-        assertThrows(IllegalArgumentException.class, () -> transactionService.createTransaction(transactionRequest));
+        assertThrows(AccountNotFoundException.class, () -> transactionService.createTransaction(transactionRequest));
     }
 
     @Test
@@ -102,6 +103,6 @@ public class TransactionServiceImplTest {
         when(entityManager.find(Account.class, "sender123")).thenReturn(sender);
         when(entityManager.find(Account.class, "receiver456")).thenReturn(null);
 
-        assertThrows(IllegalArgumentException.class, () -> transactionService.createTransaction(transactionRequest));
+        assertThrows(AccountNotFoundException.class, () -> transactionService.createTransaction(transactionRequest));
     }
 }

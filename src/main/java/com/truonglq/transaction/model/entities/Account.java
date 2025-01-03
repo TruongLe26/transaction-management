@@ -37,17 +37,21 @@ public class Account {
     @Column(name = "account_number", unique = true, nullable = false)
     String accountNumber;
 
+    @Builder.Default
     @Column(name = "balance", nullable = false)
     BigDecimal balance = BigDecimal.ZERO;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     AccountStatus status = AccountStatus.ACTIVE;
 
+    @Builder.Default
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt = LocalDateTime.now();
 
+    @Builder.Default
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     LocalDateTime updatedAt = LocalDateTime.now();

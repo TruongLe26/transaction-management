@@ -22,4 +22,6 @@ public interface TransactionService {
     List<RecordTransactionResponse> getTransactionsByUserId(String userId);
     Page<Transaction> getTransactions( String userId, String filter, Pageable pageable, BigDecimal minAmount, BigDecimal maxAmount, LocalDateTime startDate, LocalDateTime endDate);
     void addAmount(String id, BigDecimal amount);
+    Page<Transaction> getTransactionsByNativeQuery(String userId, Pageable pageable);
+//    List<Transaction> getPagedTransactions(int page, int pageSize);
 }
